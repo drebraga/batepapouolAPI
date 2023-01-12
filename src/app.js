@@ -55,8 +55,8 @@ app.post("/participants", async (req, res) => {
                 type: 'status',
                 time: dayjs().format(HOURFORMAT)
             };
-            db.collection("messages").insertOne(statusMessage);
-            db.collection("participants").insertOne(user);
+            await db.collection("messages").insertOne(statusMessage);
+            await db.collection("participants").insertOne(user);
             res.sendStatus(201);
         } else {
             res.sendStatus(409);
@@ -167,7 +167,7 @@ async function InactiveUserRemove() {
     try {
         const USERSTHATLEFT = await db.collection("participants")
             .find({ lastStatus: { $lt: time } }).toArray();
-        USERSTHATLEFT.map(e => {
+        USERSTHATLEFT.map(async (e) => {
             const statusMessage = {
                 from: e.name,
                 to: 'Todos',
@@ -175,9 +175,9 @@ async function InactiveUserRemove() {
                 type: 'status',
                 time: dayjs().format(HOURFORMAT)
             };
-            db.collection("messages").insertOne(statusMessage);
+            await db.collection("messages").insertOne(statusMessage);
         })
-        db.collection("participants")
+        await db.collection("participants")
             .deleteMany({ lastStatus: { $lt: time } });
     } catch (err) {
         console.log(err);
