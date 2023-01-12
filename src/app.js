@@ -7,15 +7,13 @@ import Joi from "joi";
 
 // ------------------------------------------------------------------- CONSTs
 
-
 const app = express();
+const PORT = 5000;
 const MAXINACTIVETIME = 10000;
 const UPDATEINACTIVEUSERSTIME = 15000;
 const HOURFORMAT = "HH:mm:ss";
 
-
 // ------------------------------------------------------------------- server config
-
 
 dotenv.config();
 app.use(express.json());
@@ -24,10 +22,7 @@ app.listen(process.env.PORT, () => {
     console.log(`Servidor aberto na porta ${process.env.PORT}`);
 });
 
-
 // ------------------------------------------------------------------- mongo config
-
-
 
 const mongoClient = new MongoClient(process.env.DATABASE_URL);
 let db;
@@ -38,9 +33,7 @@ try {
     console.log(err);
 }
 
-
 // ------------------------------------------------------------------- /participants
-
 
 app.post("/participants", async (req, res) => {
     // Validation
@@ -82,9 +75,7 @@ app.get("/participants", async (req, res) => {
     }
 });
 
-
 // ------------------------------------------------------------------- /messages
-
 
 app.post("/messages", async (req, res) => {
     // Validation
@@ -146,9 +137,7 @@ app.get("/messages", async (req, res) => {
     }
 });
 
-
 // ------------------------------------------------------------------- /status
-
 
 app.post("/status", async (req, res) => {
     const { user } = req.headers;
