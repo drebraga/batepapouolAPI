@@ -108,7 +108,7 @@ app.post("/messages", async (req, res) => {
 });
 
 app.get("/messages", async (req, res) => {
-    const limit = parseInt(req.query.limit);
+    const limit = req.query.limit ? parseInt(req.query.limit) : false;
     const { user } = req.headers;
     const queryOperator = {
         $or: [
@@ -127,13 +127,16 @@ app.get("/messages", async (req, res) => {
     try {
         const MESSAGELIST = await db.collection("messages")
             .find(queryOperator).toArray();
-        if (isNaN(limit) || limit <= 0) {
-            return res.sendStatus(422);
-        } else if (limit > 0 && limit <= MESSAGELIST.length) {
-            return res.send(MESSAGELIST.slice(-limit));
+        if (limit || isNaN(limit)) {
+            if (isNaN(limit) || limit <= 0) {
+                return res.sendStatus(422);
+            } else if (limit > 0) {
+                return res.send(MESSAGELIST.slice(-limit));
+            }
         } else {
             return res.send(MESSAGELIST);
         }
+
     } catch (err) {
         console.log(err);
     }
