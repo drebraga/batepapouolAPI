@@ -142,10 +142,10 @@ app.get("/messages", async (req, res) => {
             if (isNaN(limit) || limit <= 0) {
                 return res.sendStatus(422);
             } else if (limit > 0) {
-                return res.send(MESSAGELIST.slice(-limit));
+                return res.send(MESSAGELIST.slice(-limit).reverse());
             }
         } else {
-            return res.send(MESSAGELIST);
+            return res.send(MESSAGELIST.reverse());
         }
 
     } catch (err) {
