@@ -127,6 +127,17 @@ app.get("/messages", async (req, res) => {
     try {
         const MESSAGELIST = await db.collection("messages")
             .find(queryOperator).toArray();
+        MESSAGELIST.sort(function (x, y) {
+            const a = x.time.split(":");
+            const b = y.time.split(":");
+            let j = 0;
+            for (let i = 0; i < a.length; i++) {
+                if (a[i] === b[i]) {
+                    return j++
+                }
+            }
+            return a[j] < b[j] ? -1 : a[j] > b[j] ? 1 : 0;
+        });
         if (limit || isNaN(limit) || limit === 0) {
             if (isNaN(limit) || limit <= 0) {
                 return res.sendStatus(422);
