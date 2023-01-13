@@ -127,7 +127,6 @@ app.get("/messages", async (req, res) => {
     try {
         const MESSAGELIST = await db.collection("messages")
             .find(queryOperator).toArray();
-        console.log(limit > 0 && limit <= MESSAGELIST.length)
         if (isNaN(limit) || limit <= 0) {
             return res.sendStatus(422);
         } else if (limit > 0 && limit <= MESSAGELIST.length) {
@@ -144,11 +143,9 @@ app.get("/messages", async (req, res) => {
 
 app.post("/status", async (req, res) => {
     const { user } = req.headers;
-    console.log(user)
     try {
         const USERCHECK = await db.collection("participants")
             .findOne({ name: user });
-        console.log(USERCHECK)
         if (USERCHECK) {
             await db.collection("participants")
                 .updateOne({ name: user },
