@@ -109,7 +109,7 @@ app.post("/messages", async (req, res) => {
 
 app.get("/messages", async (req, res) => {
     const limit = req.query.limit;
-    if (limit < 1) return res.sendStatus(422);
+    if (limit < 0) return res.sendStatus(422);
     const { user } = req.headers;
     const queryOperator = {
         $or: [
