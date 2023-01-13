@@ -127,7 +127,7 @@ app.get("/messages", async (req, res) => {
     try {
         const MESSAGELIST = await db.collection("messages")
             .find(queryOperator).toArray();
-        if (limit || isNaN(limit)) {
+        if (limit || isNaN(limit) || limit === 0) {
             if (isNaN(limit) || limit <= 0) {
                 return res.sendStatus(422);
             } else if (limit > 0) {
