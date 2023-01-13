@@ -109,16 +109,17 @@ app.post("/messages", async (req, res) => {
 
 app.get("/messages", async (req, res) => {
     const limit = req.query.limit;
+    if (limit < 1) return res.sendStatus(422);
     const { user } = req.headers;
     const queryOperator = {
         $or: [
             {
                 type: "private_message",
-                from: user.name
+                from: user
             },
             {
                 type: "private_message",
-                to: user.name
+                to: user
             },
             { type: "message" },
             { type: "status" }
