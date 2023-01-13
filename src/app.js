@@ -18,8 +18,8 @@ const HOURFORMAT = "HH:mm:ss";
 dotenv.config();
 app.use(express.json());
 app.use(cors());
-app.listen(process.env.PORT, () => {
-    console.log(`Servidor aberto na porta ${process.env.PORT}`);
+app.listen(PORT, () => {
+    console.log(`Servidor aberto na porta ${PORT}`);
 });
 
 // ------------------------------------------------------------------- mongo config
@@ -148,7 +148,7 @@ app.post("/status", async (req, res) => {
         console.log(USERCHECK)
         if (USERCHECK) {
             await db.collection("participants")
-                .updateOne({ user: user },
+                .updateOne({ name: user },
                     {
                         $set: { lastStatus: Date.now() }
                     });
