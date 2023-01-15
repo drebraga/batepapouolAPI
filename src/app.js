@@ -1,9 +1,11 @@
 import express from "express";
 import cors from "cors"
-import { MongoClient } from "mongodb";
+import { MongoClient, ObjectId } from "mongodb";
 import dotenv from "dotenv"
 import dayjs from "dayjs";
 import Joi from "joi";
+import { strict as assert } from "assert";
+import { stripHtml } from "string-strip-html";
 
 // ------------------------------------------------------------------- CONSTs
 
@@ -35,6 +37,16 @@ try {
 
 // ------------------------------------------------------------------- /participants
 
+
+app.get("/participants", async (req, res) => {
+    try {
+        const USERLIST = await db.collection("participants").find({}).toArray();
+        res.send(USERLIST);
+    } catch (err) {
+        console.log(err);
+    }
+});
+
 app.post("/participants", async (req, res) => {
     // Validation
     const schema = Joi.object({
@@ -44,7 +56,10 @@ app.post("/participants", async (req, res) => {
     const { error } = schema.validate(req.body);
     if (error) return res.sendStatus(422);
     // User to save
-    const user = { ...req.body, lastStatus: Date.now() };
+    const user = {
+        name: stripHtml(req.body.name.trim()).result,
+        lastStatus: Date.now()
+    };
     try {
         const USERAVAILABLE = await db.collection("participants").findOne({ name: user.name });
         if (!USERAVAILABLE) {
@@ -66,46 +81,9 @@ app.post("/participants", async (req, res) => {
     }
 });
 
-app.get("/participants", async (req, res) => {
-    try {
-        const USERLIST = await db.collection("participants").find({}).toArray();
-        res.send(USERLIST);
-    } catch (err) {
-        console.log(err);
-    }
-});
 
 // ------------------------------------------------------------------- /messages
 
-app.post("/messages", async (req, res) => {
-    // Validation
-    const schema = Joi.object({
-        to: Joi.string().required(),
-        text: Joi.string().required(),
-        type: Joi.string().valid("message", "private_message").required()
-    })
-    // Checks validation
-    const { error } = schema.validate(req.body);
-    if (error) return res.sendStatus(422);
-    // Continues without validation errors
-    const username = req.headers.user;
-    const CHECKUSER = await db.collection("participants").findOne({ name: username });
-    try {
-        if (CHECKUSER) {
-            const message = {
-                ...req.body,
-                from: username,
-                time: dayjs().format(HOURFORMAT)
-            };
-            await db.collection("messages").insertOne(message);
-            return res.sendStatus(201);
-        } else {
-            return res.sendStatus(422);
-        }
-    } catch (err) {
-        console.log(err);
-    }
-});
 
 app.get("/messages", async (req, res) => {
     const limit = req.query.limit ? parseInt(req.query.limit) : false;
@@ -127,23 +105,10 @@ app.get("/messages", async (req, res) => {
     try {
         const MESSAGELIST = await db.collection("messages")
             .find(queryOperator).toArray();
-        MESSAGELIST.sort(function (x, y) {
-            const a = x.time.split(":");
-            const b = y.time.split(":");
-            let j = 0;
-            for (let i = 0; i < a.length; i++) {
-                if (a[i] === b[i]) {
-                    return j++
-                }
-            }
-            return a[j] < b[j] ? -1 : a[j] > b[j] ? 1 : 0;
-        });
-        if (limit || isNaN(limit) || limit === 0) {
-            if (isNaN(limit) || limit <= 0) {
-                return res.sendStatus(422);
-            } else if (limit > 0) {
-                return res.send(MESSAGELIST.slice(-limit).reverse());
-            }
+        if (isNaN(limit) || limit < 0 || limit === 0) {
+            return res.sendStatus(422);
+        } else if (limit > 0) {
+            return res.send(MESSAGELIST.slice(-limit).reverse());
         } else {
             return res.send(MESSAGELIST.reverse());
         }
@@ -152,6 +117,94 @@ app.get("/messages", async (req, res) => {
         console.log(err);
     }
 });
+
+app.post("/messages", async (req, res) => {
+    // Validation
+    const schema = Joi.object({
+        to: Joi.string().required(),
+        text: Joi.string().required(),
+        type: Joi.string().valid("message", "private_message").required()
+    })
+    // Checks validation
+    const { value, error } = schema.validate(req.body);
+    if (error) return res.sendStatus(422);
+    // Continues without validation errors
+    const username = stripHtml(req.headers.user).result;
+    if (!username) return res.sendStatus(422);
+    const CHECKUSER = await db.collection("participants").findOne({ name: username });
+    try {
+        if (CHECKUSER) {
+            const message = {
+                to: stripHtml(value.to).result,
+                text: stripHtml(value.text).result,
+                type: stripHtml(value.type).result,
+                from: username,
+                time: dayjs().format(HOURFORMAT)
+            };
+            await db.collection("messages").insertOne(message);
+            return res.sendStatus(201);
+        } else {
+            return res.sendStatus(422);
+        }
+    } catch (err) {
+        console.log(err);
+    }
+});
+
+app.delete("/messages/:id", async (req, res) => {
+    const { user } = req.headers;
+    const id = ObjectId(req.params.id);
+    try {
+        const message = await db.collection("messages").findOne({ _id: id });
+        if (!message) {
+            res.sendStatus(404);
+        } else if (message.from === user) {
+            await db.collection("messages").deleteOne({ _id: id });
+            return res.sendStatus(202);
+        } else {
+            return res.sendStatus(401);
+        }
+    } catch (err) {
+        console.log(err);
+    }
+});
+
+app.put("/messages/:id", async (req, res) => {
+    // Validation
+    const schema = Joi.object({
+        to: Joi.string().required(),
+        text: Joi.string().required(),
+        type: Joi.string().valid("message", "private_message").required()
+    });
+    // Checks validation
+    const { error } = schema.validate(req.body);
+    // Continues
+    const { user } = req.headers;
+    const id = ObjectId(req.params.id);
+    const CHECKUSER = await db.collection("participants").findOne({ name: user });
+    const { to, text, type } = req.body;
+    if (!CHECKUSER || !user || error) return res.sendStatus(422);
+    try {
+        const message = await db.collection("messages").findOne({ _id: id });
+        if (!message) {
+            res.sendStatus(404);
+        } else if (message.from === user) {
+            await db.collection("messages").updateOne({ _id: id }, {
+                $set: {
+                    to: to,
+                    text: text,
+                    type: type
+                }
+            });
+            return res.sendStatus(202);
+        } else {
+            return res.sendStatus(401);
+        }
+    } catch (err) {
+        console.log(err);
+    }
+});
+
 
 // ------------------------------------------------------------------- /status
 
