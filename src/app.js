@@ -127,10 +127,9 @@ app.post("/messages", async (req, res) => {
     })
     // Checks validation
     const { value, error } = schema.validate(req.body);
-    if (error) return res.sendStatus(422);
+    if (error || !req.headers.user) return res.sendStatus(422);
     // Continues without validation errors
     const username = stripHtml(req.headers.user).result;
-    if (!username) return res.sendStatus(422);
     const CHECKUSER = await db.collection("participants").findOne({ name: username });
     try {
         if (CHECKUSER) {
@@ -160,7 +159,7 @@ app.delete("/messages/:id", async (req, res) => {
             res.sendStatus(404);
         } else if (message.from === user) {
             await db.collection("messages").deleteOne({ _id: id });
-            return res.sendStatus(202);
+            return res.sendStatus(200);
         } else {
             return res.sendStatus(401);
         }
@@ -196,7 +195,7 @@ app.put("/messages/:id", async (req, res) => {
                     type: type
                 }
             });
-            return res.sendStatus(202);
+            return res.sendStatus(200);
         } else {
             return res.sendStatus(401);
         }
