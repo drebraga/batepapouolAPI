@@ -4,7 +4,6 @@ import { MongoClient, ObjectId } from "mongodb";
 import dotenv from "dotenv"
 import dayjs from "dayjs";
 import Joi from "joi";
-import { strict as assert } from "assert";
 import { stripHtml } from "string-strip-html";
 
 // ------------------------------------------------------------------- CONSTs
@@ -156,7 +155,7 @@ app.delete("/messages/:id", async (req, res) => {
     try {
         const message = await db.collection("messages").findOne({ _id: id });
         if (!message) {
-            res.sendStatus(404);
+            return res.sendStatus(404);
         } else if (message.from === user) {
             await db.collection("messages").deleteOne({ _id: id });
             return res.sendStatus(200);
@@ -186,7 +185,7 @@ app.put("/messages/:id", async (req, res) => {
     try {
         const message = await db.collection("messages").findOne({ _id: id });
         if (!message) {
-            res.sendStatus(404);
+            return res.sendStatus(404);
         } else if (message.from === user) {
             await db.collection("messages").updateOne({ _id: id }, {
                 $set: {
